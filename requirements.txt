@@ -1,0 +1,7 @@
+blocket-api
+beautifulsoup4
+numpy
+pandas
+plotly
+requests
+scikit-learn
