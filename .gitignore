@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.vscode/
+.idea/
+
+# Generated output
+r1250gs_blocket.csv
+r1250gs_prisanalys.html
+debug_page_*.json
