@@ -1,0 +1,42 @@
+name: Update R1250GS analysis
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate analysis
+        run: |
+          mkdir -p public
+          python src/r1250gs.py \
+            --out public/r1250gs_blocket.csv \
+            --html public/index.html
+
+      - name: Upload generated site
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1250gs-analysis
+          path: public/
+          if-no-files-found: error
+          retention-days: 7
