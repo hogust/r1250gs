@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/cloudflare-pages-hosting
+      - main
     paths-ignore:
       - data/market_history.csv
 
@@ -45,6 +45,9 @@ jobs:
             --csv public/r1250gs_blocket.csv \
             --html public/index.html \
             --history data/market_history.csv
+
+      - name: Add build status and version metadata
+        run: python src/add_build_status.py --html public/index.html
 
       - name: Save market history
         run: |
