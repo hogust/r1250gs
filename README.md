@@ -60,3 +60,31 @@ Resultatet är en uppskattning av aktuella **utropspriser**, inte faktiska förs
 ## Genererade filer
 
 CSV-, HTML- och debugfiler ignoreras av Git via `.gitignore` och skapas lokalt när skriptet körs.
+
+## Automatisk körning och Cloudflare Pages
+
+Branchen `feature/cloudflare-pages-hosting` innehåller workflowet `.github/workflows/update-analysis.yml`.
+
+Workflowet:
+
+- kör analysen automatiskt varje dag kl. 04:30 UTC när workflowet finns på default-branchen,
+- kan startas manuellt via GitHub Actions,
+- körs även vid push till Cloudflare-feature-branchen för test,
+- bygger `public/index.html` och `public/r1250gs_blocket.csv`,
+- sparar resultatet som en GitHub Actions-artifact,
+- publicerar `public/` till Cloudflare Pages-projektet `r1250gs` när Cloudflare-secrets är konfigurerade.
+
+### GitHub Secrets
+
+Lägg följande repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `CLOUDFLARE_ACCOUNT_ID` – Cloudflare-kontots Account ID.
+- `CLOUDFLARE_API_TOKEN` – ett Cloudflare API-token med **Account → Cloudflare Pages → Edit** för aktuellt konto.
+
+Cloudflare Pages-projektet ska heta `r1250gs`. För Direct Upload kan projektet skapas i Cloudflare Dashboard eller med Wrangler:
+
+```bash
+npx wrangler pages project create r1250gs --production-branch main
+```
+
+När dessa två secrets finns deployar GitHub Actions automatiskt efter en lyckad Pythonkörning. Pushar från feature-branchen blir preview-deployments; när workflowet senare ligger på `main` blir den schemalagda körningen produktionsflödet.
