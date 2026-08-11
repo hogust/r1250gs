@@ -1,6 +1,9 @@
 name: Update R1250GS analysis
 
 on:
+  push:
+    branches:
+      - feature/cloudflare-pages-hosting
   schedule:
     - cron: "30 4 * * *"
   workflow_dispatch:
