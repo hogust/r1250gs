@@ -1,15 +1,16 @@
 name: Update R1250GS analysis
 
 on:
-  push:
-    branches:
-      - feature/cloudflare-pages-hosting
   schedule:
     - cron: "30 4 * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - feature/cloudflare-pages-hosting
 
 permissions:
   contents: read
+  deployments: write
 
 jobs:
   build-analysis:
@@ -43,3 +44,15 @@ jobs:
           path: public/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy public --project-name=r1250gs
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
