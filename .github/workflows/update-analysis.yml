@@ -2,7 +2,7 @@ name: Update R1250GS analysis
 
 on:
   schedule:
-    - cron: "30 4 * * *"
+    - cron: "17 2 * * *"
   workflow_dispatch:
   push:
     branches:
