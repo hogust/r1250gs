@@ -104,6 +104,11 @@ def enhance_html(html_path: Path, history: pd.DataFrame, updated_at: str) -> Non
       .filter-count { margin: 10px 0 0; color: #444; }
       table.result-table a { display: inline-block; padding: 5px 8px; border: 1px solid #0b57d0; border-radius: 5px; }
       table.result-table td a.ad-title-link { padding: 0; border: 0; font-weight: 600; }
+      table.result-table th.sortable { cursor: pointer; user-select: none; }
+      table.result-table th.sortable:hover { background: #e9eef7; }
+      table.result-table th.sortable::after { content: " ↕"; color: #888; font-size: 11px; }
+      table.result-table th.sortable.sort-asc::after { content: " ▲"; color: #222; }
+      table.result-table th.sortable.sort-desc::after { content: " ▼"; color: #222; }
       @media (max-width: 700px) {
         .filters { display: grid; grid-template-columns: 1fr 1fr; }
         .filters label.search-wide { grid-column: 1 / -1; }
@@ -151,7 +156,8 @@ def enhance_html(html_path: Path, history: pd.DataFrame, updated_at: str) -> Non
       const table = document.querySelector("table.result-table");
       if (!table) return;
 
-      const headers = Array.from(table.querySelectorAll("thead th")).map(th => th.textContent.trim());
+      const headerEls = Array.from(table.querySelectorAll("thead th"));
+      const headers = headerEls.map(th => th.textContent.trim());
       const idx = name => headers.indexOf(name);
       const cols = {
         variant: idx("Modelltyp"),
@@ -162,13 +168,22 @@ def enhance_html(html_path: Path, history: pd.DataFrame, updated_at: str) -> Non
         link: idx("Direktlänk")
       };
 
-      const rows = Array.from(table.querySelectorAll("tbody tr"));
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
       const value = (row, col) => col >= 0 ? row.children[col].textContent.trim() : "";
       const numberValue = (row, col) => {
         const cleaned = value(row, col).replace(/[^\d.,-]/g, "").replace(",", ".");
         const n = Number(cleaned);
         return Number.isFinite(n) ? n : null;
       };
+      const numericHeaders = new Set([
+        "Annons-ID", "Årsmodell", "Miltal", "Pris (kr)",
+        "Förväntat marknadspris (kr)", "Prisavvikelse (kr)",
+        "Prisavvikelse (%)", "Pris per mil (kr/mil)",
+        "Motorvolym (cc)", "Effekt (hk)"
+      ]);
+      let sortColumn = null;
+      let sortDirection = 1;
 
       rows.forEach(row => {
         if (cols.link >= 0) {
@@ -190,6 +205,58 @@ def enhance_html(html_path: Path, history: pd.DataFrame, updated_at: str) -> Non
             }
           }
         }
+      });
+
+      const updateSortIndicators = () => {
+        headerEls.forEach((th, i) => {
+          th.classList.remove("sort-asc", "sort-desc");
+          if (i === sortColumn) {
+            th.classList.add(sortDirection === 1 ? "sort-asc" : "sort-desc");
+          }
+        });
+      };
+
+      const sortTable = column => {
+        if (sortColumn === column) {
+          sortDirection *= -1;
+        } else {
+          sortColumn = column;
+          sortDirection = 1;
+        }
+
+        const header = headers[column];
+        const numeric = numericHeaders.has(header);
+        const sorted = [...rows].sort((a, b) => {
+          if (numeric) {
+            const av = numberValue(a, column);
+            const bv = numberValue(b, column);
+            if (av === null && bv === null) return 0;
+            if (av === null) return 1;
+            if (bv === null) return -1;
+            return (av - bv) * sortDirection;
+          }
+          const av = value(a, column);
+          const bv = value(b, column);
+          return av.localeCompare(bv, "sv", { numeric: true, sensitivity: "base" }) * sortDirection;
+        });
+
+        sorted.forEach(row => tbody.appendChild(row));
+        updateSortIndicators();
+      };
+
+      headerEls.forEach((th, column) => {
+        if (headers[column] === "Direktlänk" || headers[column] === "Beskrivning") return;
+        th.classList.add("sortable");
+        th.title = "Klicka för att sortera";
+        th.setAttribute("role", "button");
+        th.setAttribute("tabindex", "0");
+        th.addEventListener("click", () => sortTable(column));
+        th.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            sortTable(column);
+          }
+        });
       });
 
       const controls = {
