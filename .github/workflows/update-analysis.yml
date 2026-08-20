@@ -46,6 +46,9 @@ jobs:
             --html public/index.html \
             --history data/market_history.csv
 
+      - name: Move result table to top
+        run: python src/reorder_site.py --html public/index.html
+
       - name: Add build status and version metadata
         run: python src/add_build_status.py --html public/index.html
 
